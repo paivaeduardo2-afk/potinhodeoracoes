@@ -11,57 +11,53 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // 1. Handle favicon early to prevent 404 logs
-  app.get("/favicon.ico", (req, res) => {
-    res.status(204).end();
-  });
+  // 1. Favicon fallback (prevents 404 logs)
+  app.get("/favicon.ico", (req, res) => res.status(204).end());
 
-  // 2. API routes
+  // 2. API Health Check
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Potinho de Orações API is running" });
+    res.json({ status: "ok", mode: process.env.NODE_ENV || "development" });
   });
 
   if (process.env.NODE_ENV === "production") {
-    // PRODUCTION MODE
+    // PRODUCTION: Serve from dist folder
     const distPath = path.resolve(__dirname, "dist");
-    
-    if (fs.existsSync(distPath)) {
-      // Serve static assets from dist
-      app.use(express.static(distPath, { index: false }));
-
-      // SPA fallback: serve index.html for any non-file request
-      app.get("*", (req, res) => {
-        res.sendFile(path.resolve(distPath, "index.html"));
-      });
-    } else {
-      console.warn("Production mode enabled but 'dist' folder not found. Please run 'npm run build' first.");
-      app.get("*", (req, res) => {
-        res.status(500).send("Application not built. Please run 'npm run build'.");
-      });
-    }
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   } else {
-    // DEVELOPMENT MODE
-    // Use Vite's built-in SPA middleware which handles:
-    // - Serving index.html with transformations
-    // - Serving assets (/src/...)
-    // - HMR (if enabled)
+    // DEVELOPMENT: Use Vite middleware
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        host: '0.0.0.0',
+        host: "0.0.0.0",
         port: 3000
       },
       appType: "spa",
     });
 
     app.use(vite.middlewares);
+
+    // Fallback for SPA in dev mode
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    console.log(`>>> Potinho de Orações rodando em: http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error("Critical failure starting server:", err);
+  console.error("ERRO CRÍTICO AO INICIAR SERVIDOR:", err);
 });
