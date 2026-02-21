@@ -489,31 +489,22 @@ export default function App() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl px-4">
-                  <button
-                    disabled={isGenerating}
-                    onClick={() => downloadCertificate('png')}
-                    className="bg-indigo-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                    Salvar Imagem
-                  </button>
-                  <button
-                    disabled={isGenerating}
-                    onClick={() => downloadCertificate('pdf')}
-                    className="bg-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                    Salvar PDF
-                  </button>
+                <div className="w-full max-w-md px-4">
                   <button
                     disabled={isGenerating}
                     onClick={() => downloadCertificate('print')}
-                    className="bg-orange-500 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-8 py-5 rounded-2xl font-black text-xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 border-4 border-white/20"
                   >
-                    <RefreshCcw className={`w-5 h-5 ${isGenerating ? 'animate-spin' : ''}`} />
-                    Imprimir
+                    {isGenerating ? (
+                      <RefreshCcw className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <Trophy className="w-6 h-6" />
+                    )}
+                    IMPRIMIR MEU CERTIFICADO
                   </button>
+                  <p className="text-white/60 text-xs mt-4 font-medium uppercase tracking-widest">
+                    Toque acima para abrir a impressora
+                  </p>
                 </div>
 
                 <button 
