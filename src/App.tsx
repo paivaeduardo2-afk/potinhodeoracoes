@@ -3,80 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Heart, Moon, Sun, Star, RefreshCcw, X, Trophy, CheckCircle2 } from 'lucide-react';
+import { PRAYERS_LIST, PrayerData } from './data/prayers';
 
-// Types for our prayers
-interface Prayer {
-  id: number;
-  text: string;
-  color: string;
-  icon: React.ReactNode;
-}
-
-const PRAYERS: Prayer[] = [
-  {
-    id: 1,
-    text: "Jesus querido, muito obrigado por este dia tão especial. Obrigado pela minha família, pelos meus amigos e por tudo o que aprendi hoje. Abençoa meu descanso e cuida de mim durante a noite. Amém.",
-    color: "bg-blue-500",
-    icon: <Heart className="w-8 h-8 text-white" />
-  },
-  {
-    id: 2,
-    text: "Senhor, eu Te agradeço pelo amor que recebo todos os dias. Mesmo quando estou cansado ou triste, sei que o Senhor está comigo. Dá-me um sono tranquilo e sonhos cheios de paz. Amém.",
-    color: "bg-yellow-400",
-    icon: <Sun className="w-8 h-8 text-white" />
-  },
-  {
-    id: 3,
-    text: "Meu Deus, abençoe o papai, a mamãe e toda a minha família. Abençoe também meus professores e meus amiguinhos. Que todos tenham uma noite feliz e protegida pelo Teu amor. Amém.",
-    color: "bg-orange-500",
-    icon: <Star className="w-8 h-8 text-white" />
-  },
-  {
-    id: 4,
-    text: "Papai do Céu, muito obrigado pelos brinquedos e pelas risadas de hoje. Abençoe meus amigos e todos que brincaram comigo. Cuida do meu sono nesta noite. Amém.",
-    color: "bg-cyan-400",
-    icon: <Sparkles className="w-8 h-8 text-white" />
-  },
-  {
-    id: 5,
-    text: "Jesus, obrigado pela comida gostosa que recebi hoje. Abençoe as crianças que não têm o que comer. Dá-nos um sono de paz e alegria. Amém.",
-    color: "bg-green-500",
-    icon: <Heart className="w-8 h-8 text-white" />
-  },
-  {
-    id: 6,
-    text: "Senhor, obrigado pela escola e pelos meus professores. Abençoe cada coleguinha da minha sala. Cuida de nós enquanto dormimos. Amém.",
-    color: "bg-pink-500",
-    icon: <Star className="w-8 h-8 text-white" />
-  },
-  {
-    id: 7,
-    text: "Meu Deus, perdoe quando desobedeci ou fiz algo errado. Me ensine a ser bondoso e obediente. Quero viver para alegrar o Teu coração. Amém.",
-    color: "bg-purple-500",
-    icon: <Sun className="w-8 h-8 text-white" />
-  },
-  {
-    id: 8,
-    text: "Jesus, obrigado por estar sempre pertinho de mim. Mesmo quando sinto medo, sei que Tu me guardas. Abençoe minha noite de descanso. Amém.",
-    color: "bg-orange-400",
-    icon: <Moon className="w-8 h-8 text-white" />
-  },
-  {
-    id: 9,
-    text: "Papai do Céu, muito obrigado pelo abraço do papai e da mamãe. Abençoe todos da minha família com saúde e paz. Cuida de nós esta noite. Amém.",
-    color: "bg-indigo-500",
-    icon: <Heart className="w-8 h-8 text-white" />
-  },
-  {
-    id: 10,
-    text: "Senhor, obrigado pelas flores, pelos passarinhos e pela natureza. Ajuda-me a cuidar da criação com amor. Abençoe meu sono com alegria. Amém.",
-    color: "bg-emerald-500",
-    icon: <Sun className="w-8 h-8 text-white" />
-  }
-];
+const MAX_POINTS = 10;
+const STORAGE_KEY = 'potinho_used_prayers';
 
 const CONGRATS_MESSAGES = [
   "Parabéns! Você é uma criança muito especial e o Papai do Céu está muito feliz com sua dedicação!",
@@ -89,24 +22,75 @@ const CONGRATS_MESSAGES = [
   "Vitória! Você chegou ao fim do desafio. Que o Papai do Céu continue sempre pertinho de você!"
 ];
 
-const MAX_POINTS = 10;
+const COLORS = [
+  "bg-blue-500", "bg-yellow-400", "bg-orange-500", "bg-cyan-400", 
+  "bg-green-500", "bg-pink-500", "bg-purple-500", "bg-orange-400", 
+  "bg-indigo-500", "bg-emerald-500"
+];
+
+const ICONS = [
+  <Heart className="w-8 h-8 text-white" />,
+  <Sun className="w-8 h-8 text-white" />,
+  <Star className="w-8 h-8 text-white" />,
+  <Sparkles className="w-8 h-8 text-white" />,
+  <Moon className="w-8 h-8 text-white" />
+];
 
 export default function App() {
-  const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
+  const [selectedPrayer, setSelectedPrayer] = useState<PrayerData | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [points, setPoints] = useState(0);
   const [showCongrats, setShowCongrats] = useState(false);
   const [currentCongrats, setCurrentCongrats] = useState("");
+  const [usedIndices, setUsedIndices] = useState<number[]>([]);
+
+  // Helper to get consistent color/icon for a prayer
+  const getPrayerStyle = (id: number) => {
+    return {
+      color: COLORS[id % COLORS.length],
+      icon: ICONS[id % ICONS.length]
+    };
+  };
+
+  // Load used prayers on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setUsedIndices(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erro ao carregar orações usadas", e);
+      }
+    }
+  }, []);
 
   const drawPrayer = () => {
     if (points >= MAX_POINTS) {
       handleShowCongrats();
       return;
     }
+
     setIsShaking(true);
+    
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * PRAYERS.length);
-      setSelectedPrayer(PRAYERS[randomIndex]);
+      let availableIndices = PRAYERS_LIST.map((_, i) => i).filter(i => !usedIndices.includes(i));
+      
+      // If all 365 read, reset
+      if (availableIndices.length === 0) {
+        availableIndices = PRAYERS_LIST.map((_, i) => i);
+        setUsedIndices([]);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      const prayer = PRAYERS_LIST[randomIndex];
+      
+      setSelectedPrayer(prayer);
+      
+      const newUsed = [...usedIndices, randomIndex];
+      setUsedIndices(newUsed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsed));
+      
       setIsShaking(false);
     }, 800);
   };
@@ -234,7 +218,7 @@ export default function App() {
                 {[...Array(12)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className={`w-6 h-8 rounded-sm shadow-sm ${PRAYERS[i % PRAYERS.length].color} opacity-80`}
+                    className={`w-6 h-8 rounded-sm shadow-sm ${COLORS[i % COLORS.length]} opacity-80`}
                     animate={{ rotate: [0, 5, -5, 0], y: [0, -5, 0] }}
                     transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
                   />
@@ -288,7 +272,7 @@ export default function App() {
                 initial={{ scale: 0.5, y: 100, rotate: -10 }}
                 animate={{ scale: 1, y: 0, rotate: 0 }}
                 exit={{ scale: 0.5, opacity: 0, y: 100 }}
-                className={`${selectedPrayer.color} w-full max-w-md p-8 rounded-3xl shadow-2xl relative border-4 border-white/30`}
+                className={`${getPrayerStyle(selectedPrayer.id).color} w-full max-w-md p-8 rounded-3xl shadow-2xl relative border-4 border-white/30`}
               >
                 <button
                   onClick={() => setSelectedPrayer(null)}
@@ -303,10 +287,11 @@ export default function App() {
                     transition={{ duration: 2, repeat: Infinity }}
                     className="mb-6 bg-white/20 p-4 rounded-full"
                   >
-                    {selectedPrayer.icon}
+                    {getPrayerStyle(selectedPrayer.id).icon}
                   </motion.div>
                   
                   <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20 mb-6">
+                    <p className="text-sm font-bold text-white/60 uppercase tracking-widest mb-2">{selectedPrayer.theme}</p>
                     <p className="text-xl md:text-2xl font-medium leading-relaxed text-white drop-shadow-md">
                       “{selectedPrayer.text}”
                     </p>
