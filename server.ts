@@ -11,23 +11,20 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // 1. Favicon fallback (prevents 404 logs)
+  // 1. Handle favicon to prevent 404s
   app.get("/favicon.ico", (req, res) => res.status(204).end());
 
-  // 2. API Health Check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", mode: process.env.NODE_ENV || "development" });
-  });
+  // 2. Health check
+  app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
   if (process.env.NODE_ENV === "production") {
-    // PRODUCTION: Serve from dist folder
     const distPath = path.resolve(__dirname, "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.resolve(distPath, "index.html"));
     });
   } else {
-    // DEVELOPMENT: Use Vite middleware
+    // Development mode
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
@@ -37,9 +34,10 @@ async function startServer() {
       appType: "spa",
     });
 
+    // Use vite's connect instance as middleware
     app.use(vite.middlewares);
 
-    // Fallback for SPA in dev mode
+    // Explicitly handle index.html for the root and other routes
     app.use("*", async (req, res, next) => {
       const url = req.originalUrl;
       try {
@@ -54,10 +52,8 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`>>> Potinho de Orações rodando em: http://0.0.0.0:${PORT}`);
+    console.log(`Server listening on http://0.0.0.0:${PORT}`);
   });
 }
 
-startServer().catch((err) => {
-  console.error("ERRO CRÍTICO AO INICIAR SERVIDOR:", err);
-});
+startServer().catch(console.error);

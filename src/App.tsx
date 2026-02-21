@@ -88,6 +88,7 @@ export default function App() {
   const [points, setPoints] = useState(0);
   const [childName, setChildName] = useState('');
   const [showCertificateForm, setShowCertificateForm] = useState(false);
+  const [showCertificatePreview, setShowCertificatePreview] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +118,13 @@ export default function App() {
     setSelectedPrayer(null);
   };
 
-  const downloadCertificate = async (format: 'pdf' | 'png') => {
+  const handleGenerateCertificate = () => {
+    if (!childName.trim()) return;
+    setShowCertificateForm(false);
+    setShowCertificatePreview(true);
+  };
+
+  const downloadCertificate = async (format: 'pdf' | 'png' | 'print') => {
     if (!certificateRef.current) return;
     setIsGenerating(true);
 
@@ -133,21 +140,29 @@ export default function App() {
         link.download = `Certificado-Oracao-${childName || 'Crianca'}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-      } else {
+      } else if (format === 'pdf') {
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const pdf = new jsPDF({
           orientation: 'landscape',
           unit: 'mm',
-          format: 'a5' // Half A4 is A5
+          format: 'a5'
         });
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`Certificado-Oracao-${childName || 'Crianca'}.pdf`);
+      } else if (format === 'print') {
+        const dataUrl = canvas.toDataURL('image/png');
+        const windowContent = `<!DOCTYPE html><html><head><title>Imprimir Certificado</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;"><img src="${dataUrl}" style="max-width:100%;max-height:100%;" onload="window.print();window.close();"></body></html>`;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(windowContent);
+          printWindow.document.close();
+        }
       }
     } catch (error) {
-      console.error('Erro ao gerar certificado:', error);
+      console.error('Erro ao processar certificado:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -157,11 +172,12 @@ export default function App() {
     setPoints(0);
     setChildName('');
     setShowCertificateForm(false);
+    setShowCertificatePreview(false);
   };
 
   return (
     <div className="min-h-screen bg-[#0f172a] overflow-hidden relative font-sans text-slate-100">
-      {/* Animated Background Stars */}
+      {/* ... (stars background remains same) ... */}
       <div className="absolute inset-0 pointer-events-none">
         {[...Array(30)].map((_, i) => (
           <motion.div
@@ -233,7 +249,7 @@ export default function App() {
         </motion.div>
 
         {/* The Jar */}
-        <div className="relative mb-12 group cursor-pointer" onClick={!selectedPrayer && !showCertificateForm ? drawPrayer : undefined}>
+        <div className="relative mb-12 group cursor-pointer" onClick={!selectedPrayer && !showCertificateForm && !showCertificatePreview ? drawPrayer : undefined}>
           <motion.div
             animate={isShaking ? {
               x: [-5, 5, -5, 5, 0],
@@ -271,7 +287,7 @@ export default function App() {
             </div>
           </motion.div>
 
-          {!selectedPrayer && !isShaking && !showCertificateForm && (
+          {!selectedPrayer && !isShaking && !showCertificateForm && !showCertificatePreview && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -288,7 +304,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {points >= MAX_POINTS && !showCertificateForm && (
+          {points >= MAX_POINTS && !showCertificateForm && !showCertificatePreview && (
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -349,7 +365,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Certificate Form Modal */}
+        {/* Certificate Name Form Modal */}
         <AnimatePresence>
           {showCertificateForm && (
             <motion.div
@@ -358,116 +374,155 @@ export default function App() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-indigo-950/90 backdrop-blur-lg"
             >
-              <div className="w-full max-w-2xl flex flex-col items-center">
-                <motion.div
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="bg-white text-slate-900 p-8 rounded-3xl shadow-2xl w-full"
-                >
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h2 className="text-3xl font-bold text-indigo-900">Parabéns! 🎉</h2>
-                      <p className="text-slate-600">Você completou 10 orações com muito carinho.</p>
-                    </div>
-                    <button onClick={() => setShowCertificateForm(false)} className="text-slate-400 hover:text-slate-600">
-                      <X className="w-6 h-6" />
-                    </button>
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="bg-white text-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-indigo-900">Parabéns! 🎉</h2>
+                    <p className="text-slate-600">Você completou 10 orações!</p>
                   </div>
-
-                  <div className="mb-8">
-                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">
-                      Digite seu nome completo:
-                    </label>
-                    <input
-                      type="text"
-                      value={childName}
-                      onChange={(e) => setChildName(e.target.value)}
-                      placeholder="Ex: João Silva Santos"
-                      className="w-full px-6 py-4 rounded-xl border-2 border-indigo-100 focus:border-indigo-500 outline-none text-lg font-medium transition-colors"
-                    />
-                  </div>
-
-                  {/* Hidden Certificate Preview for Generation */}
-                  <div className="overflow-hidden h-0 opacity-0 pointer-events-none">
-                    <div 
-                      ref={certificateRef}
-                      className="w-[800px] h-[560px] bg-white p-12 flex flex-col items-center justify-between border-[16px] border-double border-yellow-500 relative"
-                      style={{ fontFamily: "'Quicksand', sans-serif" }}
-                    >
-                      {/* Background Decoration */}
-                      <div className="absolute inset-0 opacity-5 pointer-events-none overflow-hidden">
-                        {[...Array(20)].map((_, i) => (
-                          <Star key={i} className="absolute text-yellow-600" style={{ 
-                            top: `${Math.random() * 100}%`, 
-                            left: `${Math.random() * 100}%`,
-                            width: `${20 + Math.random() * 40}px`,
-                            height: `${20 + Math.random() * 40}px`
-                          }} />
-                        ))}
-                      </div>
-
-                      <div className="text-center z-10">
-                        <div className="flex justify-center mb-4">
-                          <div className="bg-yellow-100 p-4 rounded-full">
-                            <Trophy className="w-16 h-16 text-yellow-600" />
-                          </div>
-                        </div>
-                        <h1 className="text-5xl font-black text-indigo-900 mb-2 uppercase tracking-tighter">Certificado de Oração</h1>
-                        <p className="text-xl text-slate-600 italic font-medium">"Deixai vir a mim as criancinhas"</p>
-                      </div>
-
-                      <div className="text-center z-10 flex-1 flex flex-col justify-center">
-                        <p className="text-2xl text-slate-700 mb-4">Certificamos com muita alegria que</p>
-                        <h2 className="text-5xl font-bold text-indigo-600 border-b-4 border-indigo-100 pb-2 px-8 inline-block min-w-[300px]">
-                          {childName || '____________________'}
-                        </h2>
-                        <p className="text-2xl text-slate-700 mt-6 leading-relaxed">
-                          completou com dedicação e fé o seu <br />
-                          <span className="font-bold text-indigo-900">Potinho de Orações</span>.
-                        </p>
-                      </div>
-
-                      <div className="w-full flex justify-between items-end z-10">
-                        <div className="text-left">
-                          <p className="text-sm text-slate-400 uppercase font-bold">Data:</p>
-                          <p className="text-lg font-bold text-slate-700">{new Date().toLocaleDateString('pt-BR')}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
-                          <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
-                          <Sparkles className="w-8 h-8 text-purple-500" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      disabled={!childName || isGenerating}
-                      onClick={() => downloadCertificate('png')}
-                      className="flex-1 bg-indigo-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                    >
-                      {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                      Salvar como Imagem (PNG)
-                    </button>
-                    <button
-                      disabled={!childName || isGenerating}
-                      onClick={() => downloadCertificate('pdf')}
-                      className="flex-1 bg-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                    >
-                      {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                      Salvar como PDF
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={resetPoints}
-                    className="mt-6 text-slate-400 hover:text-slate-600 text-sm font-bold uppercase tracking-widest flex items-center gap-2 mx-auto"
-                  >
-                    <RefreshCcw className="w-4 h-4" />
-                    Começar novo potinho
+                  <button onClick={() => setShowCertificateForm(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-6 h-6" />
                   </button>
-                </motion.div>
+                </div>
+
+                <div className="mb-8">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">
+                    Digite seu nome completo:
+                  </label>
+                  <input
+                    type="text"
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                    placeholder="Ex: João Silva Santos"
+                    className="w-full px-6 py-4 rounded-xl border-2 border-indigo-100 focus:border-indigo-500 outline-none text-lg font-medium transition-colors"
+                  />
+                </div>
+
+                <button
+                  disabled={!childName.trim()}
+                  onClick={handleGenerateCertificate}
+                  className="w-full bg-indigo-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <Trophy className="w-5 h-5" />
+                  Ver Meu Certificado
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Certificate Preview & Actions Modal */}
+        <AnimatePresence>
+          {showCertificatePreview && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-indigo-950/95 backdrop-blur-xl overflow-y-auto"
+            >
+              <div className="w-full max-w-4xl flex flex-col items-center py-8">
+                <div className="flex justify-between w-full max-w-2xl mb-6 items-center px-4">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <Trophy className="text-yellow-400" />
+                    Seu Certificado está pronto!
+                  </h2>
+                  <button onClick={() => setShowCertificatePreview(false)} className="bg-white/10 p-2 rounded-full text-white hover:bg-white/20">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Certificate Visual */}
+                <div className="w-full overflow-x-auto flex justify-center mb-8 px-4">
+                  <div 
+                    ref={certificateRef}
+                    className="w-[800px] h-[560px] bg-white p-12 flex flex-col items-center justify-between border-[16px] border-double border-yellow-500 relative shadow-2xl shrink-0"
+                    style={{ fontFamily: "'Quicksand', sans-serif" }}
+                  >
+                    <div className="absolute inset-0 opacity-5 pointer-events-none overflow-hidden">
+                      {[...Array(20)].map((_, i) => (
+                        <Star key={i} className="absolute text-yellow-600" style={{ 
+                          top: `${Math.random() * 100}%`, 
+                          left: `${Math.random() * 100}%`,
+                          width: `${20 + Math.random() * 40}px`,
+                          height: `${20 + Math.random() * 40}px`
+                        }} />
+                      ))}
+                    </div>
+
+                    <div className="text-center z-10">
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-yellow-100 p-4 rounded-full">
+                          <Trophy className="w-16 h-16 text-yellow-600" />
+                        </div>
+                      </div>
+                      <h1 className="text-5xl font-black text-indigo-900 mb-2 uppercase tracking-tighter">Certificado de Oração</h1>
+                      <p className="text-xl text-slate-600 italic font-medium">"Deixai vir a mim as criancinhas"</p>
+                    </div>
+
+                    <div className="text-center z-10 flex-1 flex flex-col justify-center">
+                      <p className="text-2xl text-slate-700 mb-4">Certificamos com muita alegria que</p>
+                      <h2 className="text-5xl font-bold text-indigo-600 border-b-4 border-indigo-100 pb-2 px-8 inline-block min-w-[300px]">
+                        {childName}
+                      </h2>
+                      <p className="text-2xl text-slate-700 mt-6 leading-relaxed">
+                        completou com dedicação e fé o seu <br />
+                        <span className="font-bold text-indigo-900">Potinho de Orações</span>.
+                      </p>
+                    </div>
+
+                    <div className="w-full flex justify-between items-end z-10">
+                      <div className="text-left">
+                        <p className="text-sm text-slate-400 uppercase font-bold">Data:</p>
+                        <p className="text-lg font-bold text-slate-700">{new Date().toLocaleDateString('pt-BR')}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
+                        <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
+                        <Sparkles className="w-8 h-8 text-purple-500" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl px-4">
+                  <button
+                    disabled={isGenerating}
+                    onClick={() => downloadCertificate('png')}
+                    className="bg-indigo-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                    Salvar Imagem
+                  </button>
+                  <button
+                    disabled={isGenerating}
+                    onClick={() => downloadCertificate('pdf')}
+                    className="bg-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isGenerating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                    Salvar PDF
+                  </button>
+                  <button
+                    disabled={isGenerating}
+                    onClick={() => downloadCertificate('print')}
+                    className="bg-orange-500 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    <RefreshCcw className={`w-5 h-5 ${isGenerating ? 'animate-spin' : ''}`} />
+                    Imprimir
+                  </button>
+                </div>
+
+                <button 
+                  onClick={resetPoints}
+                  className="mt-12 bg-white/10 text-white px-8 py-3 rounded-full font-bold hover:bg-white/20 transition-all flex items-center gap-2"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Começar Novo Potinho
+                </button>
               </div>
             </motion.div>
           )}
