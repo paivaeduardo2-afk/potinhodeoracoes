@@ -66,7 +66,7 @@ export const PRAYERS_LIST: PrayerData[] = [
   // Gerando orações adicionais programaticamente para garantir o volume solicitado.
   ...Array.from({ length: 315 }, (_, i) => ({
     id: i + 51,
-    theme: "Diária",
-    text: `Papai do Céu, hoje é o dia número ${i + 51} que venho Te agradecer. Obrigado por cuidar de cada detalhe da minha vida, desde o acordar até o deitar. Que meu coração seja sempre grato e cheio de amor por Ti. Proteja meus sonhos e me dê um despertar feliz. Amém.`
+    theme: "Gratidão",
+    text: `Papai do Céu, muito obrigado por mais este momento de conversa Contigo. Obrigado por cuidar de cada detalhe da minha vida, desde o acordar até o deitar. Que meu coração seja sempre grato e cheio de amor por Ti. Proteja meus sonhos e me dê um despertar feliz. Amém.`
   }))
 ];
