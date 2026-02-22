@@ -49,79 +49,113 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-sky-400 to-indigo-600 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-white/20"
+            initial={{ 
+              top: `${Math.random() * 100}%`, 
+              left: `${Math.random() * 100}%`,
+              scale: 0.5 + Math.random()
+            }}
+            animate={{ 
+              y: [0, -20, 0],
+              rotate: [0, 10, -10, 0]
+            }}
+            transition={{
+              duration: 3 + Math.random() * 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {i % 3 === 0 ? <Star className="w-12 h-12" /> : i % 3 === 1 ? <Heart className="w-10 h-10" /> : <Sparkles className="w-8 h-8" />}
+          </motion.div>
+        ))}
+      </div>
+
       <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="bg-white p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] w-full max-w-md relative z-10 border-8 border-yellow-300"
       >
         <div className="text-center mb-8">
-          <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Heart className="text-indigo-600 w-8 h-8" />
-          </div>
-          <h2 className="text-3xl font-bold text-indigo-900">
-            {isLogin ? 'Bem-vindo de volta!' : 'Criar sua conta'}
+          <motion.div 
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-pink-200 shadow-inner"
+          >
+            <Heart className="text-pink-500 w-10 h-10 fill-pink-500" />
+          </motion.div>
+          <h2 className="text-3xl font-black text-indigo-900 tracking-tight">
+            {isLogin ? 'Olá de novo! 👋' : 'Vamos começar! ✨'}
           </h2>
-          <p className="text-slate-500 mt-2">
-            {isLogin ? 'Entre para continuar suas orações' : 'Comece sua jornada de oração hoje'}
+          <p className="text-slate-500 mt-2 font-medium">
+            {isLogin ? 'Entre para ver suas orações' : 'Crie sua conta para guardar seus pontos'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1 uppercase tracking-wider">Email</label>
-            <input 
-              type="email" 
-              required 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-colors"
-              placeholder="seu@email.com"
-            />
+            <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Email do Papai ou Mamãe</label>
+            <div className="relative">
+              <input 
+                type="email" 
+                required 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
+                placeholder="exemplo@email.com"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1 uppercase tracking-wider">Senha</label>
+            <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Senha Secreta</label>
             <input 
               type="password" 
               required 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-colors"
+              className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <motion.p 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-red-500 text-sm font-medium text-center"
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-red-50 text-red-500 p-3 rounded-xl text-sm font-bold text-center border-2 border-red-100"
             >
               {error}
-            </motion.p>
+            </motion.div>
           )}
 
-          <button 
+          <motion.button 
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-5 rounded-2xl font-black text-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_15px_25px_rgba(236,72,153,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 border-b-4 border-purple-800"
           >
             {loading ? (
-              <RefreshCcw className="w-5 h-5 animate-spin" />
+              <RefreshCcw className="w-6 h-6 animate-spin" />
             ) : isLogin ? (
-              <><LogIn className="w-5 h-5" /> Entrar</>
+              <><LogIn className="w-6 h-6" /> ENTRAR</>
             ) : (
-              <><UserPlus className="w-5 h-5" /> Cadastrar</>
+              <><UserPlus className="w-6 h-6" /> CADASTRAR</>
             )}
-          </button>
+          </motion.button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button 
             onClick={() => setIsLogin(!isLogin)}
-            className="text-indigo-600 font-bold hover:underline"
+            className="text-indigo-600 font-black hover:text-pink-500 transition-colors text-sm uppercase tracking-wider"
           >
-            {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre aqui'}
+            {isLogin ? 'Ainda não tem conta? Clique aqui! 🌟' : 'Já tem uma conta? Entre aqui! 🏠'}
           </button>
         </div>
       </motion.div>
