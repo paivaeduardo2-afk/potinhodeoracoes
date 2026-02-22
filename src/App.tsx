@@ -28,6 +28,12 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos! ✍️');
+      return;
+    }
+
     setLoading(true);
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
@@ -81,78 +87,92 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         className="bg-white p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] w-full max-w-md relative z-10 border-8 border-yellow-300"
       >
-        <div className="text-center mb-8">
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-pink-200 shadow-inner"
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={isLogin ? 'login' : 'register'}
+            initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
+            transition={{ duration: 0.2 }}
           >
-            <Heart className="text-pink-500 w-10 h-10 fill-pink-500" />
-          </motion.div>
-          <h2 className="text-3xl font-black text-indigo-900 tracking-tight">
-            {isLogin ? 'Olá de novo! 👋' : 'Vamos começar! ✨'}
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            {isLogin ? 'Entre para ver suas orações' : 'Crie sua conta para guardar seus pontos'}
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Email do Papai ou Mamãe</label>
-            <div className="relative">
-              <input 
-                type="email" 
-                required 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
-                placeholder="exemplo@email.com"
-              />
+            <div className="text-center mb-8">
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-pink-200 shadow-inner"
+              >
+                <Heart className="text-pink-500 w-10 h-10 fill-pink-500" />
+              </motion.div>
+              <h2 className="text-3xl font-black text-indigo-900 tracking-tight">
+                {isLogin ? 'Olá de novo! 👋' : 'Vamos começar! ✨'}
+              </h2>
+              <p className="text-slate-500 mt-2 font-medium">
+                {isLogin ? 'Entre para ver suas orações' : 'Crie sua conta para guardar seus pontos'}
+              </p>
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Senha Secreta</label>
-            <input 
-              type="password" 
-              required 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
-              placeholder="••••••••"
-            />
-          </div>
 
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-50 text-red-500 p-3 rounded-xl text-sm font-bold text-center border-2 border-red-100"
-            >
-              {error}
-            </motion.div>
-          )}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Email do Papai ou Mamãe</label>
+                <div className="relative">
+                  <input 
+                    type="email" 
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
+                    placeholder="exemplo@email.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Senha Secreta</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
+                  placeholder="••••••••"
+                />
+              </div>
 
-          <motion.button 
-            type="submit"
-            disabled={loading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-5 rounded-2xl font-black text-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_15px_25px_rgba(236,72,153,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 border-b-4 border-purple-800"
-          >
-            {loading ? (
-              <RefreshCcw className="w-6 h-6 animate-spin" />
-            ) : isLogin ? (
-              <><LogIn className="w-6 h-6" /> ENTRAR</>
-            ) : (
-              <><UserPlus className="w-6 h-6" /> CADASTRAR</>
-            )}
-          </motion.button>
-        </form>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-red-50 text-red-500 p-3 rounded-xl text-sm font-bold text-center border-2 border-red-100"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <motion.button 
+                type="submit"
+                disabled={loading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-5 rounded-2xl font-black text-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_15px_25px_rgba(236,72,153,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 border-b-4 border-purple-800"
+              >
+                {loading ? (
+                  <RefreshCcw className="w-6 h-6 animate-spin" />
+                ) : isLogin ? (
+                  <><LogIn className="w-6 h-6" /> ENTRAR</>
+                ) : (
+                  <><UserPlus className="w-6 h-6" /> CADASTRAR</>
+                )}
+              </motion.button>
+            </form>
+          </motion.div>
+        </AnimatePresence>
 
         <div className="mt-8 text-center">
           <button 
-            onClick={() => setIsLogin(!isLogin)}
+            type="button"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
             className="text-indigo-600 font-black hover:text-pink-500 transition-colors text-sm uppercase tracking-wider"
           >
             {isLogin ? 'Ainda não tem conta? Clique aqui! 🌟' : 'Já tem uma conta? Entre aqui! 🏠'}

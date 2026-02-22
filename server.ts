@@ -28,17 +28,20 @@ async function startServer() {
 
   app.post("/api/auth/register", async (req, res) => {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email e senha são obrigatórios!" });
+    }
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const stmt = db.prepare("INSERT INTO users (email, password) VALUES (?, ?)");
       const result = stmt.run(email, hashedPassword);
-      const token = jwt.sign({ userId: result.lastInsertRowid }, JWT_SECRET);
+      const token = jwt.sign({ userId: Number(result.lastInsertRowid) }, JWT_SECRET);
       res.json({ token, user: { email, points: 0, used_prayers: [] } });
     } catch (error: any) {
       if (error.code === "SQLITE_CONSTRAINT") {
-        res.status(400).json({ error: "Email já cadastrado" });
+        res.status(400).json({ error: "Este email já tem uma conta! Tente entrar." });
       } else {
-        res.status(500).json({ error: "Erro ao registrar usuário" });
+        res.status(500).json({ error: "Ops! Erro ao criar conta. Tente de novo." });
       }
     }
   });
@@ -47,8 +50,11 @@ async function startServer() {
     const { email, password } = req.body;
     try {
       const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+      if (!user) {
+        return res.status(404).json({ error: "Conta não encontrada. Clique em 'Cadastre-se' abaixo!" });
+      }
+      if (!(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ error: "Senha incorreta. Tente de novo!" });
       }
       const token = jwt.sign({ userId: user.id }, JWT_SECRET);
       res.json({ 
