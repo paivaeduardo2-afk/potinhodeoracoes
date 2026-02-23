@@ -29,10 +29,21 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // --- API ROUTES FIRST ---
-  // Health check (no middleware needed)
+  // --- LOGGING FIRST ---
+  app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[SERVER] ${timestamp} - ${req.method} ${req.url}`);
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const safeBody = req.body ? { ...req.body } : {};
+      if (safeBody.password) safeBody.password = '***';
+      console.log(`[SERVER] Body:`, JSON.stringify(safeBody));
+    }
+    next();
+  });
+
+  // --- API ROUTES ---
+  // Health check
   app.get("/api/health", (req, res) => {
-    console.log(`[API] Health check hit at ${new Date().toISOString()}`);
     res.json({ status: "ok", time: new Date().toISOString(), env: process.env.NODE_ENV });
   });
 
@@ -129,13 +140,6 @@ async function startServer() {
   app.all("/api/*", (req, res) => {
     console.log(`[API] 404 Not Found: ${req.method} ${req.url}`);
     res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
-  });
-
-  // Request logger for everything else
-  app.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[SERVER] ${timestamp} - ${req.method} ${req.url}`);
-    next();
   });
 
   // 1. Handle favicon to prevent 404s

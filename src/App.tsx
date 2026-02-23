@@ -29,7 +29,7 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   useEffect(() => {
     const checkServer = async () => {
       try {
-        const res = await fetch(`${window.location.origin}/api/health`);
+        const res = await fetch('/api/health');
         if (res.ok) setServerStatus('online');
         else setServerStatus('offline');
       } catch (e) {
@@ -63,8 +63,7 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     setLoading(true);
     setError('');
 
-    const baseUrl = window.location.origin;
-    const endpoint = `${baseUrl}${isLogin ? '/api/auth/login' : '/api/auth/register'}`;
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     console.log(`[AUTH] Enviando requisição para: ${endpoint}`);
     
     try {
