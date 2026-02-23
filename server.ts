@@ -21,13 +21,17 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`[SERVER] ${req.method} ${req.url}`);
+    next();
+  });
+
   // 1. Handle favicon to prevent 404s
   app.get("/favicon.ico", (req, res) => res.status(204).end());
 
   // --- AUTH ROUTES ---
-  const authRouter = express.Router();
-
-  authRouter.post("/register", async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     const { email, password } = req.body;
     console.log(`[AUTH] Tentativa de registro: ${email}`);
     if (!email || !password) {
@@ -50,7 +54,7 @@ async function startServer() {
     }
   });
 
-  authRouter.post("/login", async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
     console.log(`[AUTH] Tentativa de login: ${email}`);
     try {
@@ -80,11 +84,7 @@ async function startServer() {
     }
   });
 
-  app.use("/api/auth", authRouter);
-
   // --- PROGRESS ROUTES ---
-  const progressRouter = express.Router();
-
   const authenticateToken = (req: any, res: any, next: any) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
@@ -97,9 +97,7 @@ async function startServer() {
     });
   };
 
-  progressRouter.use(authenticateToken);
-
-  progressRouter.get("/", (req: any, res) => {
+  app.get("/api/progress", authenticateToken, (req: any, res) => {
     const user: any = db.prepare("SELECT points, used_prayers FROM users WHERE id = ?").get(req.user.userId);
     res.json({ 
       points: user.points, 
@@ -107,7 +105,7 @@ async function startServer() {
     });
   });
 
-  progressRouter.post("/", (req: any, res) => {
+  app.post("/api/progress", authenticateToken, (req: any, res) => {
     const { points, used_prayers } = req.body;
     try {
       db.prepare("UPDATE users SET points = ?, used_prayers = ? WHERE id = ?")
@@ -118,10 +116,14 @@ async function startServer() {
     }
   });
 
-  app.use("/api/progress", progressRouter);
-
   // 2. Health check
   app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+
+  // Global error handler
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("[SERVER ERROR]", err);
+    res.status(500).json({ error: "Erro interno no servidor. Tente novamente." });
+  });
 
   if (process.env.NODE_ENV === "production") {
     const distPath = path.resolve(__dirname, "dist");

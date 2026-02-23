@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const db = new Database(path.join(__dirname, 'potinho.db'));
+console.log(`[DB] Database initialized at ${path.join(__dirname, 'potinho.db')}`);
 
 // Initialize tables
 db.exec(`
