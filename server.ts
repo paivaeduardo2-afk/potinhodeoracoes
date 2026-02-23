@@ -159,35 +159,54 @@ async function startServer() {
     });
   } else {
     // Development mode
-    const vite = await createViteServer({
-      server: { 
-        middlewareMode: true,
-        host: "0.0.0.0",
-        port: 3000
-      },
-      appType: "spa",
-    });
+    console.log("[SERVER] Starting Vite in development mode...");
+    try {
+      const vite = await createViteServer({
+        server: { 
+          middlewareMode: true,
+          watch: {
+            usePolling: true,
+            interval: 100
+          }
+        },
+        appType: "spa",
+      });
 
-    // Use vite's connect instance as middleware
-    app.use(vite.middlewares);
-
-    // Explicitly handle index.html for the root and other routes
-    app.use("*", async (req, res, next) => {
-      const url = req.originalUrl;
-      try {
-        let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(template);
-      } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
-      }
-    });
+      app.use(vite.middlewares);
+      
+      app.use("*", async (req, res, next) => {
+        const url = req.originalUrl;
+        if (url.startsWith('/api')) return next();
+        
+        try {
+          const indexPath = path.join(process.cwd(), "index.html");
+          if (!fs.existsSync(indexPath)) {
+            console.error(`[VITE ERROR] index.html not found at ${indexPath}`);
+            return res.status(500).send("index.html not found");
+          }
+          let template = fs.readFileSync(indexPath, "utf-8");
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          console.error(`[VITE ERROR] Failed to serve index.html for ${url}:`, e);
+          vite.ssrFixStacktrace(e as Error);
+          next(e);
+        }
+      });
+      console.log("[SERVER] Vite middleware initialized.");
+    } catch (viteInitError) {
+      console.error("[SERVER] Failed to initialize Vite:", viteInitError);
+    }
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server listening on http://0.0.0.0:${PORT}`);
+    console.log(`[SERVER] >>> SUCCESS <<< Server is listening on port ${PORT}`);
+    console.log(`[SERVER] Local: http://localhost:${PORT}`);
+    console.log(`[SERVER] Mode: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 
-startServer().catch(console.error);
+console.log("[SERVER] Calling startServer()...");
+startServer().catch(err => {
+  console.error("[SERVER] FATAL ERROR during startServer:", err);
+});

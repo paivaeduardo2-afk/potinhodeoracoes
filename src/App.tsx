@@ -19,6 +19,7 @@ interface AuthProps {
 }
 
 const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
+  console.log("[AUTH] Rendering AuthScreen...");
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -268,6 +269,7 @@ const ICONS = [
 ];
 
 export default function App() {
+  console.log("[APP] Rendering...");
   const [token, setToken] = useState<string | null>(localStorage.getItem(AUTH_TOKEN_KEY));
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerData | null>(null);
   const [isShaking, setIsShaking] = useState(false);
