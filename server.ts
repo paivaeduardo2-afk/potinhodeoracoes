@@ -23,7 +23,14 @@ async function startServer() {
 
   // Request logger
   app.use((req, res, next) => {
-    console.log(`[SERVER] ${req.method} ${req.url}`);
+    const timestamp = new Date().toISOString();
+    console.log(`[SERVER] ${timestamp} - ${req.method} ${req.url}`);
+    if (req.method === 'POST' || req.method === 'PUT') {
+      // Log body but hide password
+      const safeBody = req.body ? { ...req.body } : {};
+      if (safeBody.password) safeBody.password = '***';
+      console.log(`[SERVER] Body:`, JSON.stringify(safeBody));
+    }
     next();
   });
 

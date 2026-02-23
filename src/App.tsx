@@ -118,10 +118,18 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <Heart className="text-pink-500 w-10 h-10 fill-pink-500" />
           </motion.div>
           <h2 className="text-3xl font-black text-indigo-900 tracking-tight">
-            {isLogin ? 'Olá de novo! 👋' : 'Vamos começar! ✨'}
+            {isLogin ? (
+              <span key="login-title">Olá de novo! 👋</span>
+            ) : (
+              <span key="register-title">Vamos começar! ✨</span>
+            )}
           </h2>
           <p className="text-slate-500 mt-2 font-medium">
-            {isLogin ? 'Entre para ver suas orações' : 'Crie sua conta para guardar seus pontos'}
+            {isLogin ? (
+              <span key="login-sub">Entre para ver suas orações</span>
+            ) : (
+              <span key="register-sub">Crie sua conta para guardar seus pontos</span>
+            )}
           </p>
         </div>
 
@@ -169,11 +177,17 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-5 rounded-2xl font-black text-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_15px_25px_rgba(236,72,153,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 border-b-4 border-purple-800"
           >
             {loading ? (
-              <RefreshCcw className="w-6 h-6 animate-spin" />
+              <span key="loading-spinner" className="flex items-center justify-center">
+                <RefreshCcw className="w-6 h-6 animate-spin" />
+              </span>
             ) : isLogin ? (
-              <><LogIn className="w-6 h-6" /> ENTRAR</>
+              <span key="login-text" className="flex items-center justify-center gap-3">
+                <LogIn className="w-6 h-6" /> ENTRAR
+              </span>
             ) : (
-              <><UserPlus className="w-6 h-6" /> CADASTRAR</>
+              <span key="register-text" className="flex items-center justify-center gap-3">
+                <UserPlus className="w-6 h-6" /> CADASTRAR
+              </span>
             )}
           </motion.button>
         </form>
@@ -187,7 +201,11 @@ const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             }}
             className="text-indigo-600 font-black hover:text-pink-500 transition-colors text-sm uppercase tracking-wider"
           >
-            {isLogin ? 'Ainda não tem conta? Clique aqui! 🌟' : 'Já tem uma conta? Entre aqui! 🏠'}
+            {isLogin ? (
+              <span key="to-register">Ainda não tem conta? Clique aqui! 🌟</span>
+            ) : (
+              <span key="to-login">Já tem uma conta? Entre aqui! 🏠</span>
+            )}
           </button>
         </div>
       </motion.div>
@@ -504,8 +522,10 @@ export default function App() {
 
           {!selectedPrayer && !isShaking && !showCongrats && (
             <motion.div
+              key="draw-button-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full"
             >
               <button
@@ -521,8 +541,10 @@ export default function App() {
 
           {points >= MAX_POINTS && !showCongrats && (
             <motion.div
+              key="max-points-badge"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
               className="absolute -top-8 -right-8 bg-yellow-400 text-indigo-900 p-4 rounded-full shadow-2xl font-black rotate-12 border-4 border-white"
             >
               10/10!
