@@ -5,8 +5,39 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import db from "./db";
 import dotenv from "dotenv";
+
+// Initialize environment variables immediately
+dotenv.config();
+
+// Lazy load database to prevent startup crashes
+let db: any;
+const getDb = async () => {
+  if (!db) {
+    try {
+      // Import dynamically to avoid top-level execution issues
+      // In a real app, we'd use a more robust singleton pattern
+      const Database = (await import('better-sqlite3')).default;
+      const dbPath = path.join(process.cwd(), 'potinho.db');
+      db = new Database(dbPath);
+      console.log(`[DB] Database initialized at ${dbPath}`);
+      
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          points INTEGER DEFAULT 0,
+          used_prayers TEXT DEFAULT '[]'
+        )
+      `);
+    } catch (err) {
+      console.error("[DB] Failed to initialize database:", err);
+      throw err;
+    }
+  }
+  return db;
+};
 
 console.log("[SERVER] Starting initialization...");
 
@@ -27,7 +58,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  // Use PORT from environment (required for Cloud Run) or default to 3000 (required for AI Studio)
+  const PORT = Number(process.env.PORT) || 3000;
 
   // --- LOGGING FIRST ---
   app.use((req, res, next) => {
@@ -57,8 +89,9 @@ async function startServer() {
       return res.status(400).json({ error: "Email e senha são obrigatórios!" });
     }
     try {
+      const database = await getDb();
       const hashedPassword = await bcrypt.hash(password, 10);
-      const stmt = db.prepare("INSERT INTO users (email, password) VALUES (?, ?)");
+      const stmt = database.prepare("INSERT INTO users (email, password) VALUES (?, ?)");
       const result = stmt.run(email, hashedPassword);
       const token = jwt.sign({ userId: Number(result.lastInsertRowid) }, JWT_SECRET);
       console.log(`[API] Register success: ${email}`);
@@ -77,7 +110,8 @@ async function startServer() {
     const { email, password } = req.body;
     console.log(`[API] Login attempt: ${email}`);
     try {
-      const user: any = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+      const database = await getDb();
+      const user: any = database.prepare("SELECT * FROM users WHERE email = ?").get(email);
       if (!user) {
         return res.status(404).json({ error: "Conta não encontrada. Cadastre-se primeiro! ✨" });
       }
@@ -102,13 +136,14 @@ async function startServer() {
   });
 
   // Development only: Reset database
-  app.post("/api/auth/reset-dev", (req, res) => {
+  app.post("/api/auth/reset-dev", async (req, res) => {
     try {
-      db.transaction(() => {
-        db.prepare("DELETE FROM users").run();
+      const database = await getDb();
+      database.transaction(() => {
+        database.prepare("DELETE FROM users").run();
         // Try to reset sequence, ignore if it doesn't exist (e.g. fresh DB)
         try {
-          db.prepare("DELETE FROM sqlite_sequence WHERE name='users'").run();
+          database.prepare("DELETE FROM sqlite_sequence WHERE name='users'").run();
         } catch (e) {}
       })();
       console.log("[API] Database reset by user request.");
@@ -131,9 +166,10 @@ async function startServer() {
     });
   };
 
-  app.get("/api/progress", authenticateToken, (req: any, res) => {
+  app.get("/api/progress", authenticateToken, async (req: any, res) => {
     try {
-      const user: any = db.prepare("SELECT points, used_prayers FROM users WHERE id = ?").get(req.user.userId);
+      const database = await getDb();
+      const user: any = database.prepare("SELECT points, used_prayers FROM users WHERE id = ?").get(req.user.userId);
       res.json({ 
         points: user.points, 
         used_prayers: JSON.parse(user.used_prayers) 
@@ -143,10 +179,11 @@ async function startServer() {
     }
   });
 
-  app.post("/api/progress", authenticateToken, (req: any, res) => {
+  app.post("/api/progress", authenticateToken, async (req: any, res) => {
     const { points, used_prayers } = req.body;
     try {
-      db.prepare("UPDATE users SET points = ?, used_prayers = ? WHERE id = ?")
+      const database = await getDb();
+      database.prepare("UPDATE users SET points = ?, used_prayers = ? WHERE id = ?")
         .run(points, JSON.stringify(used_prayers), req.user.userId);
       res.json({ success: true });
     } catch (error) {
@@ -169,11 +206,35 @@ async function startServer() {
     res.status(500).json({ error: "Erro interno no servidor. Tente novamente." });
   });
 
-  if (process.env.NODE_ENV === "production") {
-    const distPath = path.resolve(__dirname, "dist");
+  // Determine if we are in production
+  // Cloud Run provides PORT (usually 8080), AI Studio provides 3000
+  const isProduction = process.env.NODE_ENV === "production" || (!!process.env.PORT && process.env.PORT !== "3000");
+  
+  console.log(`[SERVER] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+  console.log(`[SERVER] PORT: ${PORT}`);
+
+  if (isProduction) {
+    const distPath = path.join(process.cwd(), "dist");
+    console.log(`[SERVER] Production mode: serving static files from ${distPath}`);
+    
+    if (!fs.existsSync(distPath)) {
+      console.error(`[SERVER FATAL] dist directory not found at ${distPath}.`);
+      console.error(`[SERVER FATAL] Current directory: ${process.cwd()}`);
+      console.error(`[SERVER FATAL] Files: ${fs.readdirSync(process.cwd()).join(', ')}`);
+    }
+
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send(`
+          <h1>Erro de Configuração</h1>
+          <p>A pasta 'dist' não foi encontrada. Certifique-se de rodar 'npm run build' antes do deploy.</p>
+          <p>Caminho tentado: ${indexPath}</p>
+        `);
+      }
     });
   } else {
     // Development mode

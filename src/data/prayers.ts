@@ -19,7 +19,7 @@ export const PRAYERS_LIST: PrayerData[] = [
   { id: 7, theme: "Bondade", text: "Meu Deus, perdoe quando desobedeci ou fiz algo errado. Me ensine a ser bondoso e obediente. Quero viver para alegrar o Teu coração. Amém." },
   { id: 8, theme: "Coragem", text: "Jesus, obrigado por estar sempre pertinho de mim. Mesmo quando sinto medo, sei que Tu me guardas. Abençoe minha noite de descanso. Amém." },
   { id: 9, theme: "Afeto", text: "Papai do Céu, muito obrigado pelo abraço do papai e da mamãe. Abençoe todos da minha família com saúde e paz. Cuida de nós esta noite. Amém." },
-  { id: 10, theme: "Natureza", text: "Senhor, obrigado pelas flores, pelos passarinhos e pela natureza. Ajuda-me a cuidar da criação com amor. Abençoe meu sono com alegria. Amém." },
+  { id: 10, theme: "Natureza", text: "Senhor, obrigado pelas flores, pelos passarinhos e pela natureza. Ajuda-me a cuidar da criação com amor. Abençoe meu sono with alegria. Amém." },
   { id: 11, theme: "Aventura", text: "Senhor, obrigado por mais um dia cheio de aventuras. Abençoe o amanhã que já está chegando. Dá-nos paz no coração. Amém." },
   { id: 12, theme: "Criatividade", text: "Senhor, muito obrigado pelos desenhos que pude fazer hoje. Obrigado pela criatividade que vem de Ti. Abençoe meu descanso agora. Amém." },
   { id: 13, theme: "Conforto", text: "Papai do Céu, obrigado pela minha cama macia. Abençoe meu descanso e meus sonhos. Cuida de mim a noite inteira. Amém." },
@@ -45,7 +45,6 @@ export const PRAYERS_LIST: PrayerData[] = [
   { id: 33, theme: "Animais", text: "Jesus querido, muito obrigado pelos animais. Abençoe os bichinhos e proteja cada um. Eu Te agradeço com alegria. Amém." },
   { id: 34, theme: "Presença", text: "Jesus querido, muito obrigado por estar sempre comigo. Tu és meu melhor amigo todos os dias. Eu Te amo e Te agradeço. Amém." },
   { id: 35, theme: "Amor", text: "Jesus, muito obrigado porque nunca estou sozinho. O Senhor sempre me guarda e protege. Eu confio no Teu amor. Amém." },
-  // Adicionando mais orações para cobrir uma grande variedade
   { id: 36, theme: "Estrelas", text: "Papai do Céu, obrigado pelas estrelas que brilham no céu. Elas me lembram que a Tua luz nunca apaga. Proteja meu sono. Amém." },
   { id: 37, theme: "Vovós", text: "Senhor, abençoe meus avós com muita saúde. Obrigado por todo o carinho e pelas histórias que eles me contam. Amém." },
   { id: 38, theme: "Chuva", text: "Obrigado, Deus, pela chuva que molha a terra e faz as plantas crescerem. Tudo o que criaste é perfeito. Amém." },
@@ -61,12 +60,39 @@ export const PRAYERS_LIST: PrayerData[] = [
   { id: 48, theme: "Saúde", text: "Obrigado por meu corpo ser forte e saudável. Ajude-me a cuidar bem dele. Amém." },
   { id: 49, theme: "Perdão", text: "Perdoe-me se hoje eu disse algo que entristeceu alguém. Ajude-me a ser melhor amanhã. Amém." },
   { id: 50, theme: "Luz", text: "Jesus, Tu és a luz do mundo. Brilhe em meu coração e me mostre como amar as pessoas. Amém." },
-  // ... (Continuando a lista para chegar a 365)
-  // Nota: Para brevidade nesta resposta, incluirei a lógica para 365 e preencherei com 365 variações.
-  // Gerando orações adicionais programaticamente para garantir o volume solicitado.
-  ...Array.from({ length: 315 }, (_, i) => ({
-    id: i + 51,
-    theme: "Gratidão",
-    text: `Papai do Céu, muito obrigado por mais este momento de conversa Contigo. Obrigado por cuidar de cada detalhe da minha vida, desde o acordar até o deitar. Que meu coração seja sempre grato e cheio de amor por Ti. Proteja meus sonhos e me dê um despertar feliz. Amém.`
-  }))
+  // Gerando 315 orações adicionais com variações para completar 365
+  ...[
+    "Gratidão", "Proteção", "Família", "Amigos", "Natureza", "Escola", "Saúde", "Coragem", "Bondade", "Alegria", 
+    "Paz", "Sabedoria", "Perdão", "Sonhos", "Animais", "Comida", "Brincadeiras", "Histórias", "Cuidado", "Luz"
+  ].flatMap((theme, themeIdx) => 
+    Array.from({ length: 16 }, (_, i) => {
+      const id = 51 + (themeIdx * 16) + i;
+      if (id > 365) return null;
+      
+      const variations = [
+        `Senhor, hoje quero Te agradecer especialmente pelo tema: ${theme}. Obrigado por estar comigo em cada detalhe. Amém.`,
+        `Papai do Céu, abençoe meu coração com ${theme.toLowerCase()}. Que eu possa espalhar Tua luz por onde eu passar. Amém.`,
+        `Jesus, obrigado por me ensinar sobre ${theme.toLowerCase()} hoje. Cuida do meu sono e da minha família. Amém.`,
+        `Meu Deus, sinto Tua presença quando penso em ${theme.toLowerCase()}. Obrigado por ser meu melhor amigo. Amém.`,
+        `Querido Deus, que a noite de hoje seja cheia de ${theme.toLowerCase()}. Proteja todas as crianças do mundo. Amém.`,
+        `Senhor Jesus, obrigado por colocar ${theme.toLowerCase()} na minha vida. Abençoe meus sonhos nesta noite. Amém.`,
+        `Papai do Céu, me ajude a viver com mais ${theme.toLowerCase()}. Obrigado por me amar tanto assim. Amém.`,
+        `Jesus, eu Te louvo por tudo o que criaste, especialmente por ${theme.toLowerCase()}. Fica pertinho de mim. Amém.`,
+        `Deus bondoso, obrigado pela oportunidade de aprender sobre ${theme.toLowerCase()}. Guarda meu descanso. Amém.`,
+        `Senhor, que minha vida reflita a Tua ${theme.toLowerCase()}. Obrigado por cuidar de mim e dos meus amigos. Amém.`,
+        `Jesus, obrigado por este dia de ${theme.toLowerCase()}. Abençoe o papai, a mamãe e meus irmãos. Amém.`,
+        `Papai do Céu, obrigado por me proteger com ${theme.toLowerCase()}. Dá-me um sono tranquilo e feliz. Amém.`,
+        `Meu Deus, obrigado pela alegria de sentir ${theme.toLowerCase()} no meu coração. Tu és maravilhoso. Amém.`,
+        `Jesus, obrigado por me guiar pelo caminho de ${theme.toLowerCase()}. Que eu sempre siga Teus passos. Amém.`,
+        `Senhor, abençoe minha noite com muita ${theme.toLowerCase()}. Obrigado por nunca me deixar sozinho. Amém.`,
+        `Querido Jesus, obrigado por me dar ${theme.toLowerCase()} todos os dias. Eu Te amo de todo o meu coração. Amém.`
+      ];
+      
+      return {
+        id,
+        theme,
+        text: variations[i % variations.length]
+      };
+    })
+  ).filter((p): p is PrayerData => p !== null && p.id <= 365)
 ];

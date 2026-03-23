@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Heart, Moon, Sun, Star, RefreshCcw, X, Trophy, CheckCircle2, LogIn, UserPlus, LogOut } from 'lucide-react';
 import { PRAYERS_LIST, PrayerData } from './data/prayers';
 
-const MAX_POINTS = 10;
+const MAX_POINTS = 365;
 const STORAGE_KEY = 'potinho_used_prayers';
 const AUTH_TOKEN_KEY = 'potinho_auth_token';
 
@@ -494,9 +494,12 @@ export default function App() {
   };
 
   const resetPoints = () => {
-    setPoints(0);
-    setShowCongrats(false);
-    syncProgress(0, usedIndices);
+    if (window.confirm("Deseja reiniciar todo o seu progresso de 365 dias?")) {
+      setPoints(0);
+      setUsedIndices([]);
+      setShowCongrats(false);
+      syncProgress(0, []);
+    }
   };
 
   if (!token) {
@@ -584,13 +587,23 @@ export default function App() {
             />
           </div>
           <div className="flex justify-between mt-2">
-            {[...Array(MAX_POINTS)].map((_, i) => (
-              <Star 
-                key={i} 
-                className={`w-3 h-3 ${i < points ? 'text-yellow-400 fill-yellow-400' : 'text-slate-700'}`} 
-              />
-            ))}
+            {[...Array(5)].map((_, i) => {
+              const threshold = (MAX_POINTS / 5) * (i + 1);
+              return (
+                <Star 
+                  key={i} 
+                  className={`w-4 h-4 ${points >= threshold ? 'text-yellow-400 fill-yellow-400' : 'text-slate-700'}`} 
+                />
+              );
+            })}
           </div>
+          <button 
+            onClick={resetPoints}
+            className="mt-4 text-[10px] text-slate-500 hover:text-slate-300 uppercase tracking-widest flex items-center gap-1 mx-auto transition-colors"
+          >
+            <RefreshCcw className="w-3 h-3" />
+            Reiniciar Progresso
+          </button>
         </motion.div>
 
         {/* The Jar */}
@@ -659,7 +672,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.5 }}
               className="absolute -top-8 -right-8 bg-yellow-400 text-indigo-900 p-4 rounded-full shadow-2xl font-black rotate-12 border-4 border-white"
             >
-              10/10!
+              {MAX_POINTS}/{MAX_POINTS}!
             </motion.div>
           )}
         </div>
