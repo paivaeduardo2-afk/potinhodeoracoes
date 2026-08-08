@@ -5,326 +5,44 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Heart, Moon, Sun, Star, RefreshCcw, X, Trophy, CheckCircle2, LogIn, UserPlus, LogOut } from 'lucide-react';
+import { Sparkles, Heart, Moon, Sun, Star, RefreshCcw, X, Trophy, CheckCircle2 } from 'lucide-react';
 import { PRAYERS_LIST, PrayerData } from './data/prayers';
 
 const MAX_POINTS = 365;
-const STORAGE_KEY = 'potinho_used_prayers';
-const AUTH_TOKEN_KEY = 'potinho_auth_token';
+const STORAGE_POINTS_KEY = 'potinho_points';
+const STORAGE_USED_KEY = 'potinho_used_prayers';
 
-// --- AUTH COMPONENTS ---
-
-interface AuthProps {
-  onAuthSuccess: (token: string, userData: any) => void;
+// Cookie Helper Utilities
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) {
+      try {
+        return decodeURIComponent(c.substring(nameEQ.length, c.length));
+      } catch (e) {
+        return c.substring(nameEQ.length, c.length);
+      }
+    }
+  }
+  return null;
 }
 
-const AuthScreen: React.FC<AuthProps> = ({ onAuthSuccess }) => {
-  console.log("[AUTH] Rendering AuthScreen...");
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState('');
+function setCookie(name: string, value: string, days = 365) {
+  if (typeof document === 'undefined') return;
+  const date = new Date();
+  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = "; expires=" + date.toUTCString();
+  document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/; SameSite=Lax";
+}
 
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const res = await fetch('/api/health');
-        if (res.ok) setServerStatus('online');
-        else setServerStatus('offline');
-      } catch (e) {
-        setServerStatus('offline');
-      }
-    };
-    checkServer();
-  }, []);
-
-  // Stabilize background elements to prevent hydration/DOM issues
-  const bgElements = React.useMemo(() => {
-    return [...Array(15)].map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      scale: 0.5 + Math.random(),
-      duration: 3 + Math.random() * 4,
-      type: i % 3
-    }));
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    if (!email || !password) {
-      setError('Por favor, preencha todos os campos! ✍️');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    console.log(`[AUTH] Enviando requisição para: ${endpoint}`);
-    
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      console.log(`[AUTH] Resposta recebida: ${response.status} ${response.statusText}`);
-      
-      let data;
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch (parseError) {
-        console.error('[AUTH] Erro ao parsear JSON:', text);
-        throw new Error('O servidor retornou uma resposta inválida. Tente novamente.');
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro na autenticação');
-      }
-      
-      onAuthSuccess(data.token, data.user);
-    } catch (err: any) {
-      console.error('Erro na autenticação:', err);
-      setError(err.message || 'Ocorreu um erro inesperado. Verifique sua conexão.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetDB = async () => {
-    setLoading(true);
-    setResetSuccess('');
-    try {
-      const response = await fetch('/api/auth/reset-dev', { method: 'POST' });
-      const data = await response.json();
-      if (response.ok) {
-        setResetSuccess(data.message);
-        setError('');
-        setIsLogin(false); // Switch to register
-        setShowResetConfirm(false);
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      setError('Erro ao resetar: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-sky-400 to-indigo-600 relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {bgElements.map((el) => (
-          <motion.div
-            key={el.id}
-            className="absolute text-white/20"
-            initial={{ 
-              top: el.top, 
-              left: el.left,
-              scale: el.scale
-            }}
-            animate={{ 
-              y: [0, -20, 0],
-              rotate: [0, 10, -10, 0]
-            }}
-            transition={{
-              duration: el.duration,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            {el.type === 0 ? <Star className="w-12 h-12" /> : el.type === 1 ? <Heart className="w-10 h-10" /> : <Sparkles className="w-8 h-8" />}
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] w-full max-w-md relative z-10 border-8 border-yellow-300"
-      >
-        <div className="text-center mb-8">
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-pink-200 shadow-inner"
-          >
-            <Heart className="text-pink-500 w-10 h-10 fill-pink-500" />
-          </motion.div>
-          <h2 className="text-3xl font-black text-indigo-900 tracking-tight">
-            {isLogin ? (
-              <span key="login-title">Olá de novo! 👋</span>
-            ) : (
-              <span key="register-title">Vamos começar! ✨</span>
-            )}
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            {isLogin ? (
-              <span key="login-sub">Entre para ver suas orações</span>
-            ) : (
-              <span key="register-sub">Crie sua conta para guardar seus pontos</span>
-            )}
-          </p>
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${serverStatus === 'online' ? 'bg-green-500' : serverStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`} />
-            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-              Servidor: {serverStatus === 'online' ? 'Conectado' : serverStatus === 'offline' ? 'Desconectado' : 'Verificando...'}
-            </span>
-          </div>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div 
-              key="auth-error"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="mb-6 p-4 bg-red-50 border-2 border-red-200 text-red-700 rounded-2xl text-sm font-bold flex items-center gap-3"
-            >
-              <X className="w-5 h-5 flex-shrink-0" />
-              {error}
-            </motion.div>
-          )}
-          {resetSuccess && (
-            <motion.div 
-              key="reset-success"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="mb-6 p-4 bg-green-50 border-2 border-green-200 text-green-700 rounded-2xl text-sm font-bold flex items-center gap-3"
-            >
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-              {resetSuccess}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {showResetConfirm ? (
-          <motion.div
-            key="reset-confirm-ui"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="space-y-6 text-center"
-          >
-            <div className="p-6 bg-red-50 rounded-2xl border-2 border-red-100">
-              <p className="text-red-800 font-black text-lg mb-2">TEM CERTEZA? ⚠️</p>
-              <p className="text-red-600 text-sm font-bold">
-                Isso vai apagar TODAS as contas e o progresso de todo mundo. 
-                Não tem como voltar atrás!
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="flex-1 py-4 px-6 bg-gray-100 text-gray-600 rounded-2xl font-black hover:bg-gray-200 transition-all"
-              >
-                CANCELAR
-              </button>
-              <button
-                onClick={handleResetDB}
-                disabled={loading}
-                className="flex-1 py-4 px-6 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 transition-all shadow-lg shadow-red-200 disabled:opacity-50"
-              >
-                {loading ? 'RESETANDO...' : 'SIM, APAGAR TUDO'}
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Email do Papai ou Mamãe</label>
-                <div className="relative">
-                  <input 
-                    type="email" 
-                    required 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
-                    placeholder="exemplo@email.com"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest ml-1">Senha Secreta</label>
-                <input 
-                  type="password" 
-                  required 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-sky-400 outline-none transition-all text-lg font-bold text-slate-700 placeholder:text-slate-300"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <motion.button 
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-5 rounded-2xl font-black text-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_15px_25px_rgba(236,72,153,0.4)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 border-b-4 border-purple-800"
-              >
-                {loading ? (
-                  <span key="loading-spinner" className="flex items-center justify-center">
-                    <RefreshCcw className="w-6 h-6 animate-spin" />
-                  </span>
-                ) : isLogin ? (
-                  <span key="login-text" className="flex items-center justify-center gap-3">
-                    <LogIn className="w-6 h-6" /> ENTRAR
-                  </span>
-                ) : (
-                  <span key="register-text" className="flex items-center justify-center gap-3">
-                    <UserPlus className="w-6 h-6" /> CADASTRAR
-                  </span>
-                )}
-              </motion.button>
-            </form>
-
-            <div className="mt-8 text-center space-y-4">
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError('');
-                  setResetSuccess('');
-                }}
-                className="text-indigo-600 font-black hover:text-pink-500 transition-colors text-sm uppercase tracking-wider block w-full"
-              >
-                {isLogin ? (
-                  <span key="to-register">Ainda não tem conta? Clique aqui! 🌟</span>
-                ) : (
-                  <span key="to-login">Já tem uma conta? Entre aqui! 🏠</span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowResetConfirm(true)}
-                className="text-gray-400 hover:text-red-500 transition-colors text-[10px] uppercase tracking-widest font-bold"
-              >
-                Esqueceu a senha? Resetar tudo (Dev) 🛠️
-              </button>
-            </div>
-          </>
-        )}
-      </motion.div>
-    </div>
-  );
-};
-
-// --- MAIN APP ---
+function eraseCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = name + '=; Max-Age=-99999999; path=/;';
+}
 
 const CONGRATS_MESSAGES = [
   "Parabéns! Você é uma criança muito especial e o Papai do Céu está muito feliz com sua dedicação!",
@@ -332,9 +50,9 @@ const CONGRATS_MESSAGES = [
   "Incrível! Você brilhou como uma estrelinha completando todas as orações. Continue assim!",
   "Que bênção! Você terminou o seu potinho de orações. Seu coração deve estar muito quentinho e cheio de paz!",
   "Parabéns, pequeno(a) fiel! Você mostrou que orar é um momento maravilhoso. Deus te abençoe muito!",
-  "Sensacional! Você completou 10 orações com muito carinho. O céu está em festa por você!",
+  "Sensacional! Você completou suas orações com muito carinho. O céu está em festa por você!",
   "Muito bem! Você é um exemplo de amor e fé. Que seus sonhos sejam sempre lindos e protegidos!",
-  "Vitória! Você chegou ao fim do desafio. Que o Papai do Céu continue sempre pertinho de você!"
+  "Vitória! Você chegou ao fim do desafio de 365 dias. Que o Papai do Céu continue sempre pertinho de você!"
 ];
 
 const COLORS = [
@@ -344,23 +62,66 @@ const COLORS = [
 ];
 
 const ICONS = [
-  <Heart className="w-8 h-8 text-white" />,
-  <Sun className="w-8 h-8 text-white" />,
-  <Star className="w-8 h-8 text-white" />,
-  <Sparkles className="w-8 h-8 text-white" />,
-  <Moon className="w-8 h-8 text-white" />
+  <Heart key="heart" className="w-8 h-8 text-white" />,
+  <Sun key="sun" className="w-8 h-8 text-white" />,
+  <Star key="star" className="w-8 h-8 text-white" />,
+  <Sparkles key="sparkles" className="w-8 h-8 text-white" />,
+  <Moon key="moon" className="w-8 h-8 text-white" />
 ];
 
 export default function App() {
   console.log("[APP] Rendering...");
-  const [token, setToken] = useState<string | null>(localStorage.getItem(AUTH_TOKEN_KEY));
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerData | null>(null);
   const [isShaking, setIsShaking] = useState(false);
-  const [points, setPoints] = useState(0);
   const [showCongrats, setShowCongrats] = useState(false);
   const [currentCongrats, setCurrentCongrats] = useState("");
-  const [usedIndices, setUsedIndices] = useState<number[]>([]);
-  const [loading, setLoading] = useState(!!token);
+
+  const [points, setPoints] = useState<number>(() => {
+    try {
+      const cookieVal = getCookie(STORAGE_POINTS_KEY);
+      if (cookieVal !== null) {
+        return parseInt(cookieVal, 10) || 0;
+      }
+      const saved = localStorage.getItem(STORAGE_POINTS_KEY);
+      return saved ? parseInt(saved, 10) : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
+
+  const [usedIndices, setUsedIndices] = useState<number[]>(() => {
+    try {
+      const cookieVal = getCookie(STORAGE_USED_KEY);
+      if (cookieVal !== null) {
+        return JSON.parse(cookieVal);
+      }
+      const saved = localStorage.getItem(STORAGE_USED_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Save progress to Cookies and localStorage
+  useEffect(() => {
+    try {
+      const valStr = points.toString();
+      setCookie(STORAGE_POINTS_KEY, valStr, 365);
+      localStorage.setItem(STORAGE_POINTS_KEY, valStr);
+    } catch (e) {
+      console.error('Erro ao salvar pontos:', e);
+    }
+  }, [points]);
+
+  useEffect(() => {
+    try {
+      const valStr = JSON.stringify(usedIndices);
+      setCookie(STORAGE_USED_KEY, valStr, 365);
+      localStorage.setItem(STORAGE_USED_KEY, valStr);
+    } catch (e) {
+      console.error('Erro ao salvar orações usadas:', e);
+    }
+  }, [usedIndices]);
 
   // Stabilize background stars
   const stars = React.useMemo(() => {
@@ -374,66 +135,6 @@ export default function App() {
       delay: Math.random() * 5
     }));
   }, []);
-
-  // Sync progress with backend
-  const syncProgress = async (newPoints: number, newUsed: number[]) => {
-    if (!token) return;
-    try {
-      await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ points: newPoints, used_prayers: newUsed }),
-      });
-    } catch (err) {
-      console.error('Erro ao sincronizar progresso:', err);
-    }
-  };
-
-  // Load progress on mount or login
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchProgress = async () => {
-      try {
-        const response = await fetch('/api/progress', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPoints(data.points);
-          setUsedIndices(data.used_prayers);
-        } else if (response.status === 401 || response.status === 403) {
-          handleLogout();
-        }
-      } catch (err) {
-        console.error('Erro ao carregar progresso:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProgress();
-  }, [token]);
-
-  const handleAuthSuccess = (newToken: string, userData: any) => {
-    localStorage.setItem(AUTH_TOKEN_KEY, newToken);
-    setToken(newToken);
-    setPoints(userData.points);
-    setUsedIndices(userData.used_prayers);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    setToken(null);
-    setPoints(0);
-    setUsedIndices([]);
-  };
 
   // Helper to get consistent color/icon for a prayer
   const getPrayerStyle = (id: number) => {
@@ -454,11 +155,10 @@ export default function App() {
     setTimeout(() => {
       let availableIndices = PRAYERS_LIST.map((_, i) => i).filter(i => !usedIndices.includes(i));
       
-      // If all 365 read, reset
+      // If all 365 read, reset list
       if (availableIndices.length === 0) {
         availableIndices = PRAYERS_LIST.map((_, i) => i);
         setUsedIndices([]);
-        syncProgress(points, []);
       }
 
       const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
@@ -468,7 +168,6 @@ export default function App() {
       
       const newUsed = [...usedIndices, randomIndex];
       setUsedIndices(newUsed);
-      syncProgress(points, newUsed);
       
       setIsShaking(false);
     }, 800);
@@ -484,7 +183,6 @@ export default function App() {
     if (selectedPrayer && points < MAX_POINTS) {
       const nextPoints = points + 1;
       setPoints(nextPoints);
-      syncProgress(nextPoints, usedIndices);
       
       if (nextPoints === MAX_POINTS) {
         setTimeout(handleShowCongrats, 500);
@@ -498,21 +196,14 @@ export default function App() {
       setPoints(0);
       setUsedIndices([]);
       setShowCongrats(false);
-      syncProgress(0, []);
+      eraseCookie(STORAGE_POINTS_KEY);
+      eraseCookie(STORAGE_USED_KEY);
+      try {
+        localStorage.removeItem(STORAGE_POINTS_KEY);
+        localStorage.removeItem(STORAGE_USED_KEY);
+      } catch (e) {}
     }
   };
-
-  if (!token) {
-    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <RefreshCcw className="w-12 h-12 text-indigo-500 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0f172a] overflow-hidden relative font-sans text-slate-100">
@@ -539,15 +230,6 @@ export default function App() {
           />
         ))}
       </div>
-
-      {/* Logout Button */}
-      <button 
-        onClick={handleLogout}
-        className="absolute top-6 right-6 z-20 bg-white/10 hover:bg-white/20 p-3 rounded-full text-white transition-all flex items-center gap-2"
-        title="Sair"
-      >
-        <LogOut className="w-5 h-5" />
-      </button>
 
       {/* Main Content */}
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6 max-w-2xl mx-auto text-center">
